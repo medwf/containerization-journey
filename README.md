@@ -109,13 +109,3 @@ cd containerization-journey
 - [Katacoda Kubernetes Playground](https://www.katacoda.com/courses/kubernetes)
 
 ---
-
-## 🧠 Contribution
-
-Feel free to open issues or PRs to add examples, fix typos, or share your own learning notes!
-
----
-
-## ⚡ License
-
-This project is licensed under the MIT License.
