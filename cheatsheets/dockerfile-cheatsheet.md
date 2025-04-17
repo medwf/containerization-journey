@@ -1,7 +1,3 @@
-Here's a comprehensive **Dockerfile Cheat Sheet** organized with the same clear structure, covering all essential instructions, best practices, and advanced techniques:
-
----
-
 ## **Dockerfile Command Reference**
 
 _(From Basic to Advanced)_
@@ -169,5 +165,3 @@ CMD ["gunicorn", "--bind", "0.0.0.0:8000", "app:app"]
 3. **Always specify tags** (avoid `latest`).
 4. **Prefer `COPY` over `ADD`** (unless extracting tars/URLs).
 5. **Set `WORKDIR` early** and use absolute paths.
-
-Would you like me to add specific examples for a particular language (e.g., Python, Node.js, Go) or use case?
