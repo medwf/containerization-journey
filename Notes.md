@@ -1,9 +1,5 @@
 # Docker
 
-Here's a well-structured and complete Docker Image Management cheat sheet with improved formatting and additional details:
-
----
-
 ## Docker Image Management Cheat Sheet
 
 ### Image Discovery & Acquisition
@@ -44,9 +40,9 @@ Here's a well-structured and complete Docker Image Management cheat sheet with i
 
 ---
 
-## Pro Tips
+### Pro Tips
 
-### Image Cleanup
+#### Image Cleanup
 
 ```bash
 # Remove dangling images (untagged)
@@ -59,7 +55,7 @@ docker image prune -a
 docker rmi $(docker images -q --filter "dangling=true")
 ```
 
-### Bulk Operations
+#### Bulk Operations
 
 ```bash
 # Pull multiple tags
@@ -72,7 +68,7 @@ docker save -o all_images.tar nginx:alpine redis:latest
 docker rmi -f $(docker images -aq)
 ```
 
-### Build Context Tricks
+#### Build Context Tricks
 
 ```bash
 # Build from URL
@@ -82,7 +78,7 @@ docker build -t myapp https://github.com/user/repo.git#branch:dir
 docker build --build-arg NODE_ENV=production -t myapp .
 ```
 
-### Registry Management
+#### Registry Management
 
 ```bash
 # Log in to registry
@@ -98,7 +94,7 @@ docker push registry.example.com/repo:v1
 
 ---
 
-## Visual Guide to Common Workflows
+#### Visual Guide to Common Workflows
 
 1. **Standard Build & Push**:
 
@@ -176,7 +172,7 @@ docker push registry.example.com/repo:v1
 
 ---
 
-## Pro Tips
+### Pro Tips
 
 1. **Combining Commands**:
 
@@ -209,4 +205,183 @@ docker push registry.example.com/repo:v1
 
    # Show last 50 lines and follow
    docker logs --tail 50 -f nginxCnt
+   ```
+
+## Docker Volume Management Cheat Sheet
+
+### Volume Types
+
+| Type                           | Description                           | Storage Location                                      | Managed By  | Use Case                                     |
+| ------------------------------ | ------------------------------------- | ----------------------------------------------------- | ----------- | -------------------------------------------- |
+| **Named Volumes**              | Explicitly created volumes with names | Docker storage directory (`/var/lib/docker/volumes/`) | Docker      | Persistent application data (DBs, configs)   |
+| **Anonymous Volumes**          | Auto-created without explicit names   | Docker storage directory                              | Docker      | Temporary data (usually removed with `--rm`) |
+| **Host Volumes (Bind Mounts)** | Directly map host directories         | Any host location specified                           | User/System | Development environments, host access        |
+| **tmpfs Volumes**              | In-memory storage                     | RAM only                                              | Docker      | Temporary, sensitive data                    |
+| **Volume Plugins**             | External storage solutions            | External systems (NFS, AWS EBS, etc.)                 | Third-party | Cloud storage, distributed systems           |
+
+### Volume Commands
+
+| Command              | Description               | Example                                |
+| -------------------- | ------------------------- | -------------------------------------- |
+| **`volume create`**  | Create named volume       | `docker volume create db_data`         |
+| **`volume ls`**      | List volumes              | `docker volume ls --filter "name=db_"` |
+| **`volume inspect`** | Show volume details       | `docker volume inspect db_data`        |
+| **`volume prune`**   | Remove unused volumes     | `docker volume prune`                  |
+| **`volume rm`**      | Remove specific volume(s) | `docker volume rm vol1 vol2`           |
+
+### Using Volumes with `docker run`
+
+#### 1. Named Volume
+
+```bash
+# create volume first
+docker volume create mysql_db
+
+# than create container with volume mysql_db
+docker run -d \
+  --name mysql_db \
+  -v db_data:/var/lib/mysql \
+  mysql:8.0
+```
+
+- Creates persistent storage for MySQL data
+- Volume persists after container removal
+
+#### 2. Bind Mount (Host Volume)
+
+```bash
+docker run -d \
+  --name dev_server \
+  -v /path/on/host:/path/in/container \
+  -v $(pwd):/app \
+  nginx:alpine
+```
+
+- Syncs host directory with container
+- Great for development (live code reload)
+
+#### 3. Read-Only Volume
+
+```bash
+docker run -d \
+  --name secure_app \
+  -v config:/etc/app:ro \
+  myapp:latest
+```
+
+- Mounts volume as read-only
+- Prevents container from modifying files
+
+#### 4. tmpfs Volume
+
+```bash
+docker run -d \
+  --name tmp_container \
+  --tmpfs /tmp \
+  --tmpfs /run \
+  alpine:latest
+```
+
+- Stores data in memory only
+- Disappears when container stops
+
+#### 5. Volume from Another Container
+
+```bash
+docker run -d \
+  --name data_container \
+  -v /data \
+  busybox
+
+docker run -d \
+  --name app_server \
+  --volumes-from data_container \
+  myapp:latest
+```
+
+- Shares volumes between containers
+- Legacy method (consider named volumes instead)
+
+---
+
+### Advanced Volume Operations
+
+#### Volume Permissions
+
+```bash
+# Set specific ownership
+docker run -v data_vol:/data \
+  -e PUID=1000 \
+  -e PGID=1000 \
+  linuxserver/nginx
+```
+
+#### Volume Drivers
+
+```bash
+# Create volume with specific driver
+docker volume create \
+  --driver local \
+  --opt type=nfs \
+  --opt device=:/nfs/share \
+  nfs_volume
+```
+
+#### Volume Backup/Restore
+
+```bash
+# Backup volume to tar
+docker run --rm \
+  -v db_data:/source \
+  -v $(pwd):/backup \
+  alpine \
+  tar czf /backup/db_backup.tar.gz -C /source .
+
+# Restore from backup
+docker run --rm \
+  -v db_data:/target \
+  -v $(pwd):/backup \
+  alpine \
+  tar xzf /backup/db_backup.tar.gz -C /target
+```
+
+---
+
+#### Pro Tips
+
+1. **Volume Inspection**:
+
+   ```bash
+   # Find which container is using a volume
+   docker ps -a --filter volume=db_data
+   ```
+
+2. **Anonymous Volume Prevention**:
+
+   ```bash
+   # Use --mount syntax for explicit declarations
+   docker run --mount source=db_data,target=/data mysql
+   ```
+
+3. **Development Best Practices**:
+
+   ```bash
+   # Use named volumes for dependencies, bind mounts for code
+   docker run -v node_modules:/app/node_modules -v $(pwd):/app npm start
+   ```
+
+4. **Production Recommendations**:
+
+   ```bash
+   # Use volume drivers for cloud storage
+   docker volume create \
+     --driver rexray/ebs \
+     --opt size=100 \
+     production_db
+   ```
+
+5. **Cleanup**:
+   ```bash
+   # Remove all unused volumes and containers
+   docker system prune --volumes
    ```
